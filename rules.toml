@@ -1,0 +1,90 @@
+# Title: Ssh Backdoor Log
+# Creation date: 2020/12/21
+# MITRE ATT&CK Tactic: TA0006 - Credential Access - https://attack.mitre.org/tactics/TA0006/
+# MITRE ATT&CK Technique: T1556 - Modify Authentication Process - https://attack.mitre.org/techniques/T1556/
+
+# Source 
+# https://github.com/exein-io/pulsar/blob/main/rules/credential_access/ssh_backdoor_log.yaml
+# Docs  
+# https://toml.io/en/v1.0.0#array-of-tables
+
+[[rules]]
+name = "SSH related file changes"
+type = "FileOpened"
+category = "credential_access"
+severity = "high"
+description = "Identifies a Secure Shell (SSH) client or server process creating or writing to a known SSH backdoor log file. Adversaries may modify SSH related binaries for persistence or credential access via patching sensitive functions to enable unauthorized access or to log SSH credentials for exfiltration."
+query = [
+    { field = "header.image", op = "IN", values = [
+        "/usr/sbin/sshd",
+        "/usr/bin/ssh",
+    ] },
+    { op = "AND", field = "payload.filename", operands = [
+
+        { op = "OR", operands = [
+            { filter = "STARTS_WITH", value = "~" },
+            { filter = "STARTS_WITH", value = "." },
+            { filter = "ENDS_WITH", value = "~" },
+        ] },
+
+        { op = "NOT_IN", values = [
+            ".cache",
+            ".viminfo",
+            ".bash_history",
+            ".google_authenticator",
+            ".jelenv",
+            ".csvignore",
+            ".rtreport",
+        ] },
+
+        { op = "OR", operands = [
+            # File extensions checks
+            { filter = "ENDS_WITH", value = ".in" },
+            { filter = "ENDS_WITH", value = ".out" },
+            { filter = "ENDS_WITH", value = ".ini" },
+            { filter = "ENDS_WITH", value = ".h" },
+            { filter = "ENDS_WITH", value = ".gz" },
+            { filter = "ENDS_WITH", value = ".so" },
+            { filter = "ENDS_WITH", value = ".sock" },
+            { filter = "ENDS_WITH", value = ".sync" },
+
+            # Numeric extensions
+            { filter = "ENDS_WITH", value = ".0" },
+            { filter = "ENDS_WITH", value = ".1" },
+            { filter = "ENDS_WITH", value = ".2" },
+            { filter = "ENDS_WITH", value = ".3" },
+            { filter = "ENDS_WITH", value = ".4" },
+            { filter = "ENDS_WITH", value = ".5" },
+            { filter = "ENDS_WITH", value = ".6" },
+            { filter = "ENDS_WITH", value = ".7" },
+            { filter = "ENDS_WITH", value = ".8" },
+            { filter = "ENDS_WITH", value = ".9" },
+
+            # Directory path checks
+            { filter = "STARTS_WITH", value = "/private/etc/" },
+            { filter = "STARTS_WITH", value = "/usr/share/" },
+            { filter = "STARTS_WITH", value = "/usr/include/" },
+            { filter = "STARTS_WITH", value = "/usr/local/include/" },
+            { filter = "STARTS_WITH", value = "/private/tmp/" },
+            { filter = "STARTS_WITH", value = "/private/var/tmp/" },
+            { filter = "STARTS_WITH", value = "/usr/tmp/" },
+            { filter = "STARTS_WITH", value = "/usr/share/man/" },
+            { filter = "STARTS_WITH", value = "/usr/local/share/" },
+
+            # Specific file paths check
+            { op = "IN", values = [
+                "/private/etc/ssh/.sshd_auth",
+                "/usr/bin/ssd",
+                "/private/var/opt/power",
+                "/private/etc/ssh/ssh_known_hosts",
+                "/private/var/html/lol",
+                "/private/var/log/utmp",
+                "/private/var/lib",
+                "/var/run/sshd/sshd.pid",
+                "/var/run/nscd/ns.pid",
+                "/var/run/udev/ud.pid",
+                "/var/run/udevd.pid",
+            ] },
+        ] },
+    ] },
+]
