@@ -8,27 +8,44 @@ pub struct RuleSet {
 #[derive(Debug, Deserialize)]
 pub struct Rule {
     pub name: String,
-    #[serde(rename = "type")]
     pub type_: String,
     pub category: String,
     pub severity: String,
     pub description: String,
-    pub query: Vec<ConditionNode>, // Updated to match "query" instead of "matches"
+    pub query: Vec<ConditionNode>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(untagged)] // Allows handling both simple and compound conditions
+#[serde(tag = "op", rename_all = "UPPERCASE")]
 pub enum ConditionNode {
-    Simple {
-        field: Option<String>,
-        op: String,
-        values: Option<Vec<String>>,
-        filter: Option<String>,
-        value: Option<String>,
+    #[serde(rename = "IN")]
+    InCondition {
+        field: String,
+        values: Vec<String>,
     },
-    Compound {
-        op: String,
-        operands: Vec<ConditionNode>,
+
+    #[serde(rename = "NOT_IN")]
+    NotInCondition {
+        values: Vec<String>,
     },
+
+    #[serde(rename = "OR")]
+    Or {
+        #[serde(flatten)]
+        filter: Option<FilterCondition>, // This is optional
+        operands: Option<Vec<ConditionNode>>, // OR may contain operands
+    },
+
+    #[serde(rename = "AND")]
+    And {
+        operands: Vec<ConditionNode>, // AND must have operands
+    },
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FilterCondition {
+    pub field: Option<String>,  // 🔥 Optional because OR doesn't always have a field
+    pub filter: String,
+    pub values: Vec<String>,
 }
 
